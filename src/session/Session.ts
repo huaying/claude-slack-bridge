@@ -180,9 +180,11 @@ export class Session {
         if (!this.state.activeMessageTs) break;
 
         if (event.subtype === "success") {
+          const finalText = event.result || this.state.activeMessageText;
+          console.log(`[Session] result/success: result.length=${event.result.length}, accumulated.length=${this.state.activeMessageText.length}, using.length=${finalText.length}`);
           await this.updater.finalize(
             this.state.activeMessageTs,
-            event.result || this.state.activeMessageText
+            finalText
           );
           // Post cost/turn footnote
           const cost = event.total_cost_usd.toFixed(4);
@@ -235,15 +237,21 @@ export class Session {
       // Block here until the user clicks a button
       const decision = await this.approvalGate.wait(approvalKey, signal);
 
-      // Update the approval message to reflect the decision
-      await this.client.chat.update({
-        channel: this.state.channelId,
-        ts: approvalMsgTs,
-        text: decision.approved
-          ? `✅ Approved: \`${toolName}\``
-          : `🚫 Denied: \`${toolName}\``,
-        blocks: [],
-      });
+      // Delete the approval message — no need to keep it in the thread
+      try {
+        await this.client.chat.delete({
+          channel: this.state.channelId,
+          ts: approvalMsgTs,
+        });
+      } catch {
+        // If delete fails (e.g. missing scope), fall back to a minimal update
+        await this.client.chat.update({
+          channel: this.state.channelId,
+          ts: approvalMsgTs,
+          text: decision.approved ? `\`${toolName}\` — allowed` : `\`${toolName}\` — denied`,
+          blocks: [],
+        }).catch(() => {});
+      }
 
       this.state.status = "thinking";
 
