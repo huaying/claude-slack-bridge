@@ -76,10 +76,12 @@ export class MessageUpdater {
         channel: this.channelId,
         ts,
         text,
-        blocks: [],
+        // Use a section block so Slack always renders the content visibly.
+        // Passing blocks:[] after an initial block message can leave the message blank.
+        blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
       });
-    } catch {
-      // Silently ignore update failures (e.g. message deleted, rate limit)
+    } catch (err) {
+      console.error("[MessageUpdater] Failed to update message:", (err as Error).message);
     }
   }
 

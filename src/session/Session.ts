@@ -6,7 +6,7 @@ import type {
 import type { WebClient } from "@slack/web-api";
 import { ApprovalGate } from "../approval/ApprovalGate";
 import { MessageUpdater } from "../slack/MessageUpdater";
-import { buildApprovalBlocks, buildThinkingBlocks } from "../slack/blocks";
+import { buildApprovalBlocks } from "../slack/blocks";
 import type { SessionState, AppConfig } from "../types/index";
 
 export class Session {
@@ -73,8 +73,7 @@ export class Session {
     const initial = await this.client.chat.postMessage({
       channel: this.state.channelId,
       thread_ts: this.state.threadTs,
-      blocks: buildThinkingBlocks() as any[],
-      text: "_Claude is thinking…_",
+      text: "_thinking…_",
     });
     this.state.activeMessageTs = initial.ts ?? null;
 
